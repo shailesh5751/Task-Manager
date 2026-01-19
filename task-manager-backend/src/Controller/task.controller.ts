@@ -2,12 +2,13 @@ import {
     Controller,
     Get,
     Post,
-    Patch,
+    Put,
     Delete,
     Param,
     Body,
     Query,
     ParseIntPipe,
+    Options,Res
 } from '@nestjs/common';
 import { TaskService } from '../Service/task.service';
 import { CreateTaskDto, Status } from '../DTO/create-task.dto';
@@ -41,10 +42,15 @@ export class TaskController {
         return this.taskService.findOne(id);
     }
 
-    @Patch(':id')
+    @Get('/')
+    healthCheck() {
+        return { status: 'Backend is running' };
+    }
+
+    @Put(':id')
     update(
         @Param('id', ParseIntPipe) id: number,
-        @Body() dto: UpdateTaskDto,
+        @Body() dto: UpdateTaskDto, body:any
     ) {
         return this.taskService.update(id, dto);
     }
@@ -53,4 +59,5 @@ export class TaskController {
     remove(@Param('id', ParseIntPipe) id: number) {
         return this.taskService.remove(id);
     }
-}
+
+  }
