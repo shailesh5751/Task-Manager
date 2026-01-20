@@ -1,6 +1,8 @@
-import { Modal, Form, Input, Select, message } from 'antd';
+import { Modal, Form, Input, Select, DatePicker } from 'antd';
 import { createTask, updateTask } from '../services/taskApi';
 import { useEffect } from 'react';
+import dayjs from 'dayjs';
+import { App } from 'antd';
 
 const { TextArea } = Input;
 
@@ -13,11 +15,13 @@ export default function TaskFormModal({
   const [form] = Form.useForm();
   const isEdit = !!task;
 
+  const { message } = App.useApp();
+  
   useEffect(() => {
     if (!open) return;
 
     if (task) {
-      form.setFieldsValue(task);
+      form.setFieldsValue({ ...task, dueDate: task.dueDate ? dayjs(task.dueDate) : null });
     } else {
       form.resetFields();
     }
@@ -28,11 +32,18 @@ export default function TaskFormModal({
     try {
       const values = await form.validateFields();
 
+      const payload = {
+        ...values,
+        dueDate: values.dueDate
+          ? values.dueDate.toISOString()
+          : null,
+      };
+
       if (isEdit) {
-        await updateTask(task.id, values);
+        await updateTask(task.id, payload);
         message.success('Task updated successfully');
       } else {
-        await createTask(values);
+        await createTask(payload);
         message.success('Task created successfully');
       }
 
@@ -52,9 +63,9 @@ export default function TaskFormModal({
       okText={isEdit ? 'Update Task' : 'Save Task'}
     >
       <Form layout="vertical" form={form} initialValues={{
-      priority: 'MEDIUM',
-      status: 'PENDING',
-    }}>
+        priority: 'MEDIUM',
+        status: 'PENDING',
+      }}>
         <Form.Item
           label="Title"
           name="title"
@@ -75,13 +86,18 @@ export default function TaskFormModal({
           </Select>
         </Form.Item>
 
-          <Form.Item label="Status" name="status">
-            <Select>
-              <Select.Option value="PENDING">PENDING</Select.Option>
-              <Select.Option value="IN_PROGRESS">IN_PROGRESS</Select.Option>
-              <Select.Option value="COMPLETED">COMPLETED</Select.Option>
-            </Select>
-          </Form.Item>
+        <Form.Item label="Status" name="status">
+          <Select>
+            <Select.Option value="PENDING">PENDING</Select.Option>
+            <Select.Option value="IN_PROGRESS">IN_PROGRESS</Select.Option>
+            <Select.Option value="COMPLETED">COMPLETED</Select.Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item label="Due Date" name="dueDate">
+          <DatePicker style={{ width: '100%' }} />
+        </Form.Item>
+
       </Form>
     </Modal>
   );

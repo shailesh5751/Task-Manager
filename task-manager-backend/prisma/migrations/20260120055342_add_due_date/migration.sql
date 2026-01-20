@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Task" ADD COLUMN     "dueDate" TIMESTAMP(3),
+ALTER COLUMN "title" SET DATA TYPE TEXT,
+ALTER COLUMN "description" SET DATA TYPE TEXT;

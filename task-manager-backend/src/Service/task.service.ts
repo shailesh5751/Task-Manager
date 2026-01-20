@@ -11,7 +11,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class TaskService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(data: CreateTaskDto) {
     try {
@@ -21,17 +21,48 @@ export class TaskService {
     }
   }
 
-  async findAll(status?: Status, page = 1, limit = 10) {
-    try {
-      return await this.prisma.task.findMany({
-        where: status ? { status } : {},
+  async getTasks(query: {
+    status?: string;
+    search?: string;
+    page: number;
+    limit: number;
+    sortBy: string;
+  }) {
+    const { status, search, page, limit, sortBy } = query;
+
+    const where: any = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    let orderBy: any = { createdAt: 'desc' };
+
+    if (sortBy === 'priority') {
+      orderBy = { priority: 'desc' };
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.task.findMany({
+        where,
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch {
-      throw new InternalServerErrorException('Failed to fetch tasks');
-    }
+      }),
+      this.prisma.task.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+    };
   }
 
   async findOne(id: number) {

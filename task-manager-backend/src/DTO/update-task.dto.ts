@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, IsEnum } from 'class-validator';
+import { IsOptional, IsString, MaxLength, IsEnum, IsDateString } from 'class-validator';
 import { Status, Priority } from './create-task.dto';
 
 export class UpdateTaskDto {
@@ -19,4 +19,9 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsEnum(Priority)
   priority?: Priority;
+
+  @IsOptional()
+@IsDateString()
+dueDate?: string;
+
 }
