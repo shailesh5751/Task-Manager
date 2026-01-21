@@ -3,6 +3,8 @@ import { Spin, Empty, Pagination } from 'antd';
 import { getTasks } from '../services/taskApi';
 import TaskCard from './TaskCard';
 
+const PAGE_SIZE = 10;
+
 export default function TaskList({
   status,
   refreshKey,
@@ -33,15 +35,18 @@ export default function TaskList({
       sortBy,
     })
       .then(res => {
-        if (Array.isArray(res.data)) {
+        // if (Array.isArray(res.data)) {
 
-          setTasks(res.data);
-          setTotal(res.data.length);
-        } else {
+        //   setTasks(res.data);
+        //   setTotal(res.data.length);
+        // } else {
 
-          setTasks(res.data.data || []);
-          setTotal(res.data.total || 0);
-        }
+        //   setTasks(res.data.data || []);
+        //   setTotal(res.data.total || 0);
+        // }
+
+        setTasks(res.data.data || []);
+        setTotal(res.data.total || 0);
       })
 
       .finally(() => setLoading(false));
@@ -66,13 +71,15 @@ export default function TaskList({
         />
       ))}
 
-      <Pagination
-        current={page}
-        pageSize={10}
-        total={total}
-        onChange={setPage}
-        style={{ marginTop: 16, textAlign: 'center' }}
-      />
+      {total > PAGE_SIZE && (
+        <Pagination
+          current={page}
+          pageSize={PAGE_SIZE}
+          total={total}
+          onChange={setPage}
+          style={{ marginTop: 16, textAlign: 'center' }}
+        />
+      )}
     </>
   );
 }

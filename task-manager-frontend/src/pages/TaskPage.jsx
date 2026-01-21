@@ -22,8 +22,12 @@ export default function TaskPage() {
   const [view, setView] = useState('list');
 
   const handleDelete = async (id) => {
-    await deleteTask(id);
-    setRefreshKey((k) => k + 1);
+    try {
+      await deleteTask(id);
+      setRefreshKey(k => k + 1);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleEdit = (task) => {
@@ -86,7 +90,6 @@ export default function TaskPage() {
 
         {view === 'lane' && (
           <LaneView
-            status={status}
             refreshKey={refreshKey}
             search={debouncedSearch}
             sortBy={sortBy}

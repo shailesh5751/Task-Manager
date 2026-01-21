@@ -10,6 +10,7 @@ export default function TaskHeader({ onAdd, view, setView }) {
   return (
     <Header
       style={{
+        background: darkMode ? '#001529' : '#1677ff',
         color: 'white',
         fontSize: 20,
         display: 'flex',
@@ -29,6 +30,7 @@ export default function TaskHeader({ onAdd, view, setView }) {
         </Button>
 
         <Switch
+          aria-label="Toggle dark mode"
           checked={darkMode}
           onChange={setDarkMode}
           checkedChildren="🌙"

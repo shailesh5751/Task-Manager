@@ -4,81 +4,86 @@ import TaskLane from './TaskLane';
 import { getTasks } from '../services/taskApi';
 
 const STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED'];
+const PAGE_SIZE = 10;
 
 export default function LaneView({
-    refreshKey,
-    search,
-    sortBy,
-    onEdit,
-    onDelete,
-    onStatusChange,
+  refreshKey,
+  search,
+  sortBy,
+  onEdit,
+  onDelete,
+  onStatusChange,
 }) {
-    const [lanes, setLanes] = useState({});
-    const PAGE_SIZE = 10;
+  const [lanes, setLanes] = useState({});
 
-    const [pages, setPages] = useState({
-        PENDING: 1,
-        IN_PROGRESS: 1,
-        COMPLETED: 1,
+  const [pages, setPages] = useState({
+    PENDING: 1,
+    IN_PROGRESS: 1,
+    COMPLETED: 1,
+  });
+
+  const handlePageChange = (status, page) => {
+    setPages(prev => ({ ...prev, [status]: page }));
+  };
+
+  useEffect(() => {
+    setPages({
+      PENDING: 1,
+      IN_PROGRESS: 1,
+      COMPLETED: 1,
     });
+  }, [search, sortBy]);
 
-    const handlePageChange = (status, page) => {
-        setPages(prev => ({ ...prev, [status]: page }));
-    };
+  useEffect(() => {
+    async function loadLanes() {
+      try {
+        const responses = await Promise.all(
+          STATUSES.map((status) =>
+            getTasks({
+              status,
+              page: pages[status],
+              limit: PAGE_SIZE,
+              search,
+              sortBy,
+            })
+          )
+        );
 
-    useEffect(() => {
-  async function loadLanes() {
-    try {
-      const responses = await Promise.all(
-        STATUSES.map((status) =>
-          getTasks({
-            status,
-            page: pages[status],
-            limit: PAGE_SIZE,
-            search,
-            sortBy,
-          })
-        )
-      );
+        const laneData = {};
 
-      const laneData = {};
+        STATUSES.forEach((status, index) => {
+          laneData[status] = {
+            tasks: responses[index]?.data?.data || [],
+            total: responses[index]?.data?.total || 0,
+          };
+        });
 
-      STATUSES.forEach((status, index) => {
-        laneData[status] = {
-          tasks: responses[index]?.data?.data || [],
-          total: responses[index]?.data?.total || 0,
-        };
-      });
-
-      setLanes(laneData);
-    } catch (err) {
-      console.error('LaneView fetch error:', err);
+        setLanes(laneData);
+      } catch (err) {
+        console.error('LaneView fetch error:', err);
+      }
     }
-  }
 
-  loadLanes();
-}, [refreshKey, search, sortBy, pages]);
+    loadLanes();
+  }, [refreshKey, search, sortBy, pages]);
 
+  return (
+    <Row gutter={16}>
+      {STATUSES.map(status => (
+        <Col span={8} key={status}>
+          <TaskLane
+            title={status.replace('_', ' ')}
+            tasks={lanes[status]?.tasks || []}
+            count={lanes[status]?.total || 0}
+            page={pages[status]}
+            onPageChange={(page) => handlePageChange(status, page)}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onStatusChange={onStatusChange}
+          />
 
-    console.log('LaneView mounted');
-
-    return (
-        <Row gutter={16}>
-            {STATUSES.map(status => (
-                <Col span={8} key={status}>
-                    <TaskLane
-                        title={status.replace('_', ' ')}
-                        tasks={lanes[status]?.tasks || []}
-                        count={lanes[status]?.total || 0}
-                        page={pages[status]}
-                        onPageChange={(page) => handlePageChange(status, page)}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                        onStatusChange={onStatusChange}
-                    />
-
-                </Col>
-            ))}
-        </Row>
-    );
+        </Col>
+      ))}
+    </Row>
+  );
 }

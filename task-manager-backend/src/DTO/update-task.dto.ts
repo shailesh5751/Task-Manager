@@ -21,7 +21,7 @@ export class UpdateTaskDto {
   priority?: Priority;
 
   @IsOptional()
-@IsDateString()
-dueDate?: string;
+  @IsDateString()
+  dueDate?: string;
 
 }
