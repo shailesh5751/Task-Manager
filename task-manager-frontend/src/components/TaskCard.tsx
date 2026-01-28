@@ -1,13 +1,21 @@
 import { Card, Button, Popconfirm, Space, Select, Tag } from 'antd';
 import dayjs from 'dayjs';
+import { Status, Task } from '../types/task';
 
-export default function TaskCard({ task, onEdit, onDelete, onStatusChange }) {
+export interface TaskCardProps {
+  task: Task;
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: number) => void;
+  onStatusChange: (taskId: number, status: Status) => void;
+}
+
+export default function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
   const isOverdue =
     task.dueDate &&
     task.status !== 'COMPLETED' &&
     dayjs(task.dueDate).isBefore(dayjs());
   return (
-    <Card style={{ marginBottom: 16, borderLeft: isOverdue ? '4px solid red' : '4px solid transparent', }}>
+    <Card style={{ height:190, marginBottom: 16, borderLeft: isOverdue ? '4px solid red' : '4px solid transparent', }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <strong>{task.title}</strong>
 
@@ -22,7 +30,6 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange }) {
           <Select.Option value="COMPLETED">COMPLETED</Select.Option>
         </Select>
 
-        {/* <span>[{task.status}]</span> */}
       </div>
 
       <div style={{ marginTop: 8 }}>
@@ -34,9 +41,9 @@ export default function TaskCard({ task, onEdit, onDelete, onStatusChange }) {
       </div>
 
       {task.dueDate && (
-        <div style={{color: isOverdue ? 'red' : '#555' }}>
+        <div style={{ color: isOverdue ? 'red' : '#555' }}>
           Due: {dayjs(task.dueDate).format('MMM DD, YYYY')}
-          {isOverdue && <Tag style={{marginLeft:10}} color="red">Overdue</Tag>}
+          {isOverdue && <Tag style={{ marginLeft: 10 }} color="red">Overdue</Tag>}
         </div>
       )}
 

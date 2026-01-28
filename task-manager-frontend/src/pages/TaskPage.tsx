@@ -7,21 +7,34 @@ import TaskFormModal from '../components/TaskFormModal';
 import { deleteTask, getTaskCounts, updateTask } from '../services/taskApi';
 import useDebounce from '../hooks/useDebounce';
 import LaneView from '../components/LaneView';
+import { Status, Task } from '../types/task';
 
 const { Content } = Layout;
 
-export default function TaskPage() {
-  const [status, setStatus] = useState();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [editingTask, setEditingTask] = useState(null);
-  const [counts, setCounts] = useState({});
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebounce(search, 500);
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [view, setView] = useState('list');
+type ViewMode = 'list' | 'lane';
 
-  const handleDelete = async (id) => {
+interface TaskCounts {
+  pending: number;
+  inProgress: number;
+  completed: number;
+}
+
+export default function TaskPage() {
+  const [status, setStatus] = useState<Status | undefined>(undefined);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [counts, setCounts] = useState<TaskCounts>({
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+  });
+  const [search, setSearch] = useState<string>('');
+  const debouncedSearch = useDebounce(search, 500);
+  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [view, setView] = useState<ViewMode>('list');
+
+  const handleDelete = async (id: number) => {
     try {
       await deleteTask(id);
       setRefreshKey(k => k + 1);
@@ -30,12 +43,12 @@ export default function TaskPage() {
     }
   };
 
-  const handleEdit = (task) => {
+  const handleEdit = (task: Task) => {
     setEditingTask(task);
     setModalOpen(true);
   };
 
-  const handleQuickStatusChange = async (id, status) => {
+  const handleQuickStatusChange = async (id: number, status: Status) => {
     if (!id || !status) return;
     await updateTask(id, { status });
     setRefreshKey(k => k + 1);
@@ -103,7 +116,7 @@ export default function TaskPage() {
       </Content>
       <TaskFormModal
         open={modalOpen}
-        task={editingTask}
+        task={editingTask || undefined}
         onClose={() => {
           setModalOpen(false);
           setEditingTask(null);

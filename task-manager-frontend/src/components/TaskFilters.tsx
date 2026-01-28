@@ -1,4 +1,26 @@
 import { Tabs, Input, Select, Space } from 'antd';
+import { Status } from '../types/task';
+
+export type StatusFilter = Status | 'ALL';
+
+const isStatus = (value: string): value is Status =>
+  value === 'PENDING' || value === 'IN_PROGRESS' || value === 'COMPLETED';
+
+interface TaskCounts {
+  pending: number;
+  inProgress: number;
+  completed: number;
+}
+
+interface TaskFiltersProps {
+  counts: TaskCounts;
+  hideStatus?: boolean;
+  onStatusChange?: (tatus: Status | undefined) => void;
+  onSearch: (title: string) => void;
+  sortBy: string;
+  onSortChange: (sortBy: string) => void;
+  search: string;
+}
 
 export default function TaskFilters({
   counts,
@@ -8,14 +30,20 @@ export default function TaskFilters({
   sortBy,
   onSortChange,
   search
-}) {
+}: TaskFiltersProps) {
   return (
     <>
       {!hideStatus && (
         <Tabs
-          onChange={(key) =>
-            onStatusChange(key === 'ALL' ? undefined : key)
-          }
+          onChange={(key: string) => {
+            if (!onStatusChange) return;
+
+            if (key === 'ALL') {
+              onStatusChange(undefined);
+            } else if (isStatus(key)) {
+              onStatusChange(key as Status);
+            }
+          }}
           items={[
             { key: 'ALL', label: 'All' },
             { key: 'PENDING', label: `Pending (${counts.pending || 0})` },

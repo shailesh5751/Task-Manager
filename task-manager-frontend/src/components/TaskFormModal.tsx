@@ -1,27 +1,49 @@
 import { Modal, Form, Input, Select, DatePicker } from 'antd';
 import { createTask, updateTask } from '../services/taskApi';
 import { useEffect } from 'react';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import { App } from 'antd';
+import { Priority, Status, Task } from '../types/task';
 
 const { TextArea } = Input;
+
+interface TaskFormValues {
+  title: string;
+  description?: string;
+  status: Status;
+  priority: Priority;
+  dueDate?: Dayjs | null;
+}
+
+export type TaskFormModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  task?: Task;
+}
 
 export default function TaskFormModal({
   open,
   onClose,
   onSuccess,
   task, // undefined for Add, object for Edit
-}) {
-  const [form] = Form.useForm();
+}: TaskFormModalProps) {
+  const [form] = Form.useForm<TaskFormValues>();
   const isEdit = !!task;
 
   const { message } = App.useApp();
-  
+
   useEffect(() => {
     if (!open) return;
 
     if (task) {
-      form.setFieldsValue({ ...task, dueDate: task.dueDate ? dayjs(task.dueDate) : null });
+      form.setFieldsValue({
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate ? dayjs(task.dueDate) : null,
+      });
     } else {
       form.resetFields();
     }
@@ -39,7 +61,7 @@ export default function TaskFormModal({
           : null,
       };
 
-      if (isEdit) {
+      if (task) {
         await updateTask(task.id, payload);
         message.success('Task updated successfully');
       } else {
@@ -95,7 +117,10 @@ export default function TaskFormModal({
         </Form.Item>
 
         <Form.Item label="Due Date" name="dueDate">
-          <DatePicker style={{ width: '100%' }} />
+          <DatePicker style={{ width: '100%' }}
+            disabledDate={(current) =>
+              current && current.isBefore(dayjs().startOf('day'))
+            } />
         </Form.Item>
 
       </Form>

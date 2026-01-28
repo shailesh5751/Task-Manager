@@ -3,8 +3,15 @@ import { useContext } from 'react';
 import { ThemeContext } from '../context/ThemeContext';
 
 const { Header } = Layout;
+type ViewMode = 'list' | 'lane';
 
-export default function TaskHeader({ onAdd, view, setView }) {
+export interface TaskHeaderProps {
+  onAdd: () => void;
+  view: ViewMode;
+  setView: (view: ViewMode) => void;
+}
+
+export default function TaskHeader({ onAdd, view, setView }: TaskHeaderProps) {
   const { darkMode, setDarkMode } = useContext(ThemeContext);
 
   return (
