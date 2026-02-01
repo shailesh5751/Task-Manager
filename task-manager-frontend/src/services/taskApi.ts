@@ -1,54 +1,53 @@
-import axios from 'axios';
-import { Priority, Status, Task } from '../types/task';
+import axios, { AxiosResponse } from 'axios';
 
-export interface TaskListResponse {
-  data: Task[];
-  total: number;
+export interface Task {
+    id: number;
+    title: string;
+    description?: string | null;
+    status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+    priority: 'LOW' | 'MEDIUM' | 'HIGH';
+    due_date?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TasksResponse {
+    data: Task[];
+    total: number;
 }
 
 export interface TaskCounts {
-  pending: number;
-  inProgress: number;
-  completed: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
 }
 
 export interface GetTasksParams {
-  status?: Status;
-  page?: number;
-  limit?: number;
-  search?: string;
-  sortBy?: string;
-}
-
-export interface TaskPayload {
-  title: string;
-  description?: string;
-  status: Status;
-  priority: Priority;
-  dueDate?: string | null;
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    sortBy?: string;
 }
 
 const API = axios.create({
-  baseURL: 'http://localhost:3000',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+    baseURL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001',
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
-export const getTasks = (params: GetTasksParams) =>
-  API.get<TaskListResponse>('/tasks', { params });
+export const getTasks = (params: GetTasksParams): Promise<AxiosResponse<TasksResponse>> =>
+    API.get('/tasks', { params });
 
-export const createTask = (data: TaskPayload) =>
-  API.post<Task>('/tasks', data);
+export const createTask = (data: Partial<Task>): Promise<AxiosResponse<Task>> =>
+    API.post('/tasks', data);
 
-export const updateTask = (
-  id: number,
-  data: Partial<TaskPayload>
-) =>
-  API.put<Task>(`/tasks/${id}`, data);
+export const updateTask = (id: number, data: Partial<Task>): Promise<AxiosResponse<Task>> =>
+    API.put(`/tasks/${id}`, data);
 
-export const deleteTask = (id: number) =>
-  API.delete(`/tasks/${id}`);
+export const deleteTask = (id: number): Promise<AxiosResponse<void>> =>
+    API.delete(`/tasks/${id}`);
 
-export const getTaskCounts = () =>
-  API.get('/tasks/counts');
+export const getTaskCounts = (): Promise<AxiosResponse<TaskCounts>> =>
+    API.get('/tasks/counts');

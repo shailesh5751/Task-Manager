@@ -1,5 +1,7 @@
-import TaskPage from "./pages/TaskPage";
+import TaskPage from './pages/TaskPage';
 
-export default function App() {
-  return <TaskPage/>;
+function App() {
+    return <TaskPage />;
 }
+
+export default App;

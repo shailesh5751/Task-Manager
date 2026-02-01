@@ -1,128 +1,119 @@
 import { Layout } from 'antd';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@apollo/client/react';
 import TaskHeader from '../components/TaskHeader';
 import TaskFilters from '../components/TaskFilters';
 import TaskList from '../components/TaskList';
 import TaskFormModal from '../components/TaskFormModal';
-import { deleteTask, getTaskCounts, updateTask } from '../services/taskApi';
+import { GET_TASK_COUNTS } from '../graphql/tasks.queries';
 import useDebounce from '../hooks/useDebounce';
 import LaneView from '../components/LaneView';
-import { Status, Task } from '../types/task';
+import { Task } from '../services/taskApi';
 
 const { Content } = Layout;
 
-type ViewMode = 'list' | 'lane';
-
-interface TaskCounts {
-  pending: number;
-  inProgress: number;
-  completed: number;
+interface TaskCountsResponse {
+    getTaskCounts: {
+        pending: number;
+        inProgress: number;
+        completed: number;
+    };
 }
 
 export default function TaskPage() {
-  const [status, setStatus] = useState<Status | undefined>(undefined);
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [refreshKey, setRefreshKey] = useState<number>(0);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [counts, setCounts] = useState<TaskCounts>({
-    pending: 0,
-    inProgress: 0,
-    completed: 0,
-  });
-  const [search, setSearch] = useState<string>('');
-  const debouncedSearch = useDebounce(search, 500);
-  const [sortBy, setSortBy] = useState<string>('createdAt');
-  const [view, setView] = useState<ViewMode>('list');
+    const [status, setStatus] = useState<string>();
+    const [modalOpen, setModalOpen] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 500);
+    const [sortBy, setSortBy] = useState('Sort by Date');
+    const [view, setView] = useState<'list' | 'lane'>('list');
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteTask(id);
-      setRefreshKey(k => k + 1);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+    const { data: countsData } = useQuery<TaskCountsResponse>(GET_TASK_COUNTS, {
+        fetchPolicy: 'cache-and-network',
+    });
 
-  const handleEdit = (task: Task) => {
-    setEditingTask(task);
-    setModalOpen(true);
-  };
+    const counts = countsData?.getTaskCounts || {
+        pending: 0,
+        inProgress: 0,
+        completed: 0,
+    };
 
-  const handleQuickStatusChange = async (id: number, status: Status) => {
-    if (!id || !status) return;
-    await updateTask(id, { status });
-    setRefreshKey(k => k + 1);
-  };
+    const handleEdit = (task: Task) => {
+        setEditingTask(task);
+        setModalOpen(true);
+    };
+    
+    const handleSuccess = () => {
+        setRefreshKey(k => k + 1);
+        setEditingTask(null);
+    };
 
-  useEffect(() => {
-    getTaskCounts().then((res) => setCounts(res.data));
-  }, [refreshKey]);
+    return (
+        <Layout>
+            <TaskHeader
+                onAdd={() => setModalOpen(true)}
+                view={view}
+                setView={setView}
+            />
 
-  return (
-    <Layout>
-      <TaskHeader onAdd={() => setModalOpen(true)}
-        view={view}
-        setView={setView}
-      />
+            <Content style={{ padding: 24 }}>
+                {view === 'list' && (
+                    <TaskFilters
+                        counts={counts}
+                        onStatusChange={setStatus}
+                        onSearch={setSearch}
+                        search={search}
+                        sortBy={sortBy}
+                        onSortChange={setSortBy}
+                    />
+                )}
 
-      <Content style={{ padding: 24 }}>
-        {view === 'list' && (
-          <TaskFilters
-            counts={counts}
-            onStatusChange={setStatus}
-            onSearch={setSearch}
-            search={search}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-          />
-        )}
+                {view === 'lane' && (
+                    <TaskFilters
+                        counts={counts}
+                        hideStatus
+                        onSearch={setSearch}
+                        search={search}
+                        sortBy={sortBy}
+                        onSortChange={setSortBy}
+                    />
+                )}
 
-        {view === 'lane' && (
-          <TaskFilters
-            counts={counts}
-            hideStatus   // NEW FLAG
-            onSearch={setSearch}
-            search={search}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-          />
-        )}
+                {view === 'list' && (
+                    <TaskList
+                        status={status}
+                        refreshKey={refreshKey}
+                        search={debouncedSearch}
+                        sortBy={sortBy}
+                        onEdit={handleEdit}
+                        onDelete={handleSuccess}
+                        onStatusChange={handleSuccess}
+                    />
+                )}
 
+                {view === 'lane' && (
+                    <LaneView
+                        refreshKey={refreshKey}
+                        search={debouncedSearch}
+                        sortBy={sortBy}
+                        onEdit={handleEdit}
+                        onDelete={handleSuccess}
+                        onStatusChange={handleSuccess}
+                    />
+                )}
 
-        {view === 'list' && (
-          <TaskList
-            status={status}
-            refreshKey={refreshKey}
-            search={debouncedSearch}
-            sortBy={sortBy}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onStatusChange={handleQuickStatusChange}
-          />
-        )}
-
-        {view === 'lane' && (
-          <LaneView
-            refreshKey={refreshKey}
-            search={debouncedSearch}
-            sortBy={sortBy}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onStatusChange={handleQuickStatusChange}
-          />
-        )}
-
-
-      </Content>
-      <TaskFormModal
-        open={modalOpen}
-        task={editingTask || undefined}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingTask(null);
-        }}
-        onSuccess={() => setRefreshKey((k) => k + 1)}
-      />
-    </Layout>
-  );
+                <TaskFormModal
+                    open={modalOpen}
+                    onClose={() => {
+                        setModalOpen(false);
+                        setEditingTask(null);
+                    }}
+                    onSuccess={handleSuccess}
+                    task={editingTask}
+                />
+            </Content>
+        </Layout>
+    );
 }

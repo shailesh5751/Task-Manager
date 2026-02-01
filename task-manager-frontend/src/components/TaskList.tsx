@@ -1,84 +1,95 @@
-import { useEffect, useState, CSSProperties, JSX } from 'react';
-import { Spin, Empty } from 'antd';
-import { FixedSizeList as List } from 'react-window';
-import { getTasks } from '../services/taskApi';
+import { useEffect, useState, FC } from 'react';
+import { Spin, Empty, Pagination } from 'antd';
+import { getTasks, Task } from '../services/taskApi';
 import TaskCard from './TaskCard';
-import { Status, Task } from '../types/task';
 
-const LIST_HEIGHT = 700;
-const ITEM_HEIGHT = 200;
-const LIST_WIDTH = 1700;
+const PAGE_SIZE = 10;
 
 interface TaskListProps {
-  status?: Status;
-  refreshKey: number;
-  search: string;
-  sortBy: string;
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: number) => void;
-  onStatusChange: (taskId: number, status: Status) => void;
+    status?: string;
+    refreshKey: number;
+    onEdit: (task: Task) => void;
+    onDelete?: () => void;
+    search: string;
+    sortBy: string;
+    onStatusChange?: () => void;
 }
 
-export default function TaskList({
-  status,
-  refreshKey,
-  search,
-  sortBy,
-  onEdit,
-  onDelete,
-  onStatusChange,
-}: TaskListProps): JSX.Element {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+const TaskList: FC<TaskListProps> = ({
+    status,
+    refreshKey,
+    onEdit,
+    onDelete,
+    search,
+    sortBy,
+    onStatusChange
+}) => {
+    const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [total, setTotal] = useState(0);
 
-  // Fetch tasks
-  useEffect(() => {
-    setLoading(true);
-    getTasks({ status, search, sortBy, limit: 1000 })
-      .then(res => setTasks(res.data?.data ?? []))
-      .finally(() => setLoading(false));
-  }, [status, refreshKey, search, sortBy]);
+    useEffect(() => {
+        setPage(1);
+    }, [search, sortBy, status]);
 
-  // Guards (VERY IMPORTANT)
-  if (loading) return <Spin />;
-  if (!Array.isArray(tasks) || tasks.length === 0) {
-    return <Empty />;
-  }
+    useEffect(() => {
+        async function loadTasks() {
+            setLoading(true);
+            try {
+                const resolvedSort =
+                    sortBy === 'Sort by Date' || sortBy === 'createdAt' ? 'created_at' : sortBy === 'Sort by Priority' || sortBy === 'priority' ? 'priority' : 'created_at';
 
-  // Row renderer (react-window calls this many times)
-  const Row = ({
-    index,
-    style,
-  }: {
-    index: number;
-    style: CSSProperties;
-  }): JSX.Element => {
-    const task = tasks[index];
+                const response = await getTasks({
+                    page,
+                    limit: PAGE_SIZE,
+                    status: status || undefined,
+                    search: search || undefined,
+                    sortBy: resolvedSort,
+                });
+                setTasks(response.data.data);
+                setTotal(response.data.total);
+            } catch (err) {
+                console.error('Error fetching tasks:', err);
+                setTasks([]);
+                setTotal(0);
+            } finally {
+                setLoading(false);
+            }
+        }
 
-    // react-window may ask for out-of-range rows (overscan)
-    if (!task || tasks.length===0) {
-      return <div style={style} />;
+        loadTasks();
+    }, [page, status, search, sortBy, refreshKey]);
+
+    if (loading && tasks.length === 0) return <Spin />;
+
+    if (!Array.isArray(tasks) || tasks.length === 0) {
+        return <Empty />;
     }
-    return (
-      <div style={style}>
-        <TaskCard
-          task={task}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onStatusChange={onStatusChange}
-        />
-      </div>
-    );
-  };
 
-  return (
-    <List
-      height={LIST_HEIGHT}
-      width={LIST_WIDTH}
-      itemCount={tasks.length}
-      itemSize={ITEM_HEIGHT}
-    >
-      {Row}
-    </List>
-  );
-}
+    return (
+        <>
+            {tasks.map(task => (
+                <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onStatusChange={onStatusChange}
+                />
+            ))}
+
+            {total > PAGE_SIZE && (
+                <Pagination
+                    current={page}
+                    pageSize={PAGE_SIZE}
+                    total={total}
+                    onChange={setPage}
+                    style={{ marginTop: 16, textAlign: 'center' }}
+                />
+            )}
+        </>
+    );
+};
+
+export default TaskList;

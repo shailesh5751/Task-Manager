@@ -1,73 +1,64 @@
-import { Card } from 'antd';
-import { FixedSizeList as List } from 'react-window';
+import { Card, Empty } from 'antd';
+import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import TaskCard from './TaskCard';
-import { Task, Status } from '../types/task';
-import { CSSProperties, JSX } from 'react';
+import { Task } from '../services/taskApi';
 
-const LANE_HEIGHT = 700;
-const ITEM_HEIGHT = 200;
-const LANE_WIDTH = 550;
+const ITEM_HEIGHT =200;
+const LIST_HEIGHT = 700;
+const LIST_WIDTH = 500;
 
 interface TaskLaneProps {
-  title: string;
-  status: Status;
-  tasks: Task[];
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: number) => void;
-  onStatusChange: (taskId: number, status: Status) => void;
+    title: string;
+    tasks: Task[];
+    count: number;
+    onEdit: (task: Task) => void;
+    onDelete?: (taskId: number) => void;
+    onStatusChange?: (taskId: number, status: string) => void;
 }
 
-export default function TaskLane({
-  title,
-  tasks,
-  onEdit,
-  onDelete,
-  onStatusChange,
-}: TaskLaneProps): JSX.Element {
-  // Empty lane guard
-  if (!Array.isArray(tasks) || tasks.length === 0) {
-    return (
-      <Card title={title} styles={{ body: { padding: 16 } }}>
-        No tasks
-      </Card>
-    );
-  }
+const TaskLane = ({
+    title,
+    tasks,
+    count,
+    onEdit,
+    onDelete,
+    onStatusChange,
+}: TaskLaneProps) => {
+    const Row = ({ index, style }: ListChildComponentProps) => {
+        const task = tasks[index];
+        if (!task) return null;
 
-  const Row = ({
-    index,
-    style,
-  }: {
-    index: number;
-    style: CSSProperties;
-  }): JSX.Element => {
-    const task = tasks[index];
-
-    if (!task) {
-      return <div style={style} />;
-    }
+        return (
+            <div style={style}>
+                <TaskCard
+                    task={task}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onStatusChange={onStatusChange}
+                />
+            </div>
+        );
+    };
 
     return (
-      <div style={style}>
-        <TaskCard
-          task={task}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onStatusChange={onStatusChange}
-        />
-      </div>
+        <Card
+            title={`${title} (${count})`}
+        >
+            {tasks.length === 0 ? (
+                <Empty />
+            ) : (
+                <List
+                    height={LIST_HEIGHT}
+                    width={LIST_WIDTH}
+                    itemCount={tasks.length}
+                    itemSize={ITEM_HEIGHT}
+                    overscanCount={3}
+                >
+                    {Row}
+                </List>
+            )}
+        </Card>
     );
-  };
+};
 
-  return (
-    <Card title={`${title} (${tasks.length})`} styles={{ body: { padding: 0 } }}>
-      <List
-        height={LANE_HEIGHT}
-        width={LANE_WIDTH}
-        itemCount={tasks.length}
-        itemSize={ITEM_HEIGHT}
-      >
-        {Row}
-      </List>
-    </Card>
-  );
-}
+export default TaskLane;
